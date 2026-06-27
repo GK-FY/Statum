@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: kira-whatsapp-bot
+    env: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "5000"
+      - key: SESSION_DIR
+        value: ./session
+      - key: ADMIN_UI_TOKEN
+        generateValue: true

@@ -1,0 +1,22 @@
+name: kira-whatsapp-bot
+services:
+  - name: web
+    type: web
+    git:
+      branch: main
+    build:
+      type: dockerfile
+      dockerfile: Dockerfile
+    ports:
+      - port: 5000
+        protocol: http
+    routes:
+      - path: /
+        port: 5000
+    env:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "5000"
+      - key: SESSION_DIR
+        value: ./session

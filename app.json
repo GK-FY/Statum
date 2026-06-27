@@ -1,0 +1,12 @@
+{
+  "name": "Kira WhatsApp Bot",
+  "description": "Standalone WhatsApp bot with QR and pairing-code login.",
+  "scripts": {},
+  "env": {
+    "NODE_ENV": { "value": "production" },
+    "PORT": { "value": "5000" },
+    "SESSION_DIR": { "value": "./session" },
+    "ADMIN_UI_TOKEN": { "value": "changeme-strong-token" }
+  },
+  "formation": { "web": { "quantity": 1, "size": "basic" } }
+}

@@ -1,0 +1,96 @@
+{
+  "data": [
+    {
+      "id": "56e9432e-875c-454a-ae36-27315341b865",
+      "name": "19GB Valid For 1Hr",
+      "price": 19,
+      "description": "",
+      "networks": [
+        "safaricom"
+      ],
+      "once_per_day": false,
+      "createdAt": "2026-06-25 10:20:57.736",
+      "updatedAt": "2026-06-25 10:36:58.219"
+    },
+    {
+      "id": "c5f240d0-bbbe-4164-9a2a-4b5ffdbfb89c",
+      "name": "250MBS Valid For 24Hrs",
+      "price": 20,
+      "description": "",
+      "networks": [
+        "safaricom"
+      ],
+      "once_per_day": true,
+      "createdAt": "2026-06-25 10:21:53.257"
+    },
+    {
+      "id": "0c7af6bf-1c4f-48b5-b52e-ae66db2db49d",
+      "name": "1.5GB Valid For 3Hrs",
+      "price": 49,
+      "description": "",
+      "networks": [
+        "safaricom"
+      ],
+      "once_per_day": true,
+      "createdAt": "2026-06-25 10:22:41.494",
+      "updatedAt": "2026-06-25 10:22:47.249"
+    },
+    {
+      "id": "f3936bd2-b83c-4317-8b38-9299901730a2",
+      "name": "350MBS Valid For *7Days*",
+      "price": 50,
+      "description": "",
+      "networks": [
+        "safaricom"
+      ],
+      "once_per_day": false,
+      "createdAt": "2026-06-25 10:24:09.486"
+    },
+    {
+      "id": "6b24871a-b491-4c91-8e40-dd8ad9999aa3",
+      "name": "1.25GB Valid Till Midnight",
+      "price": 55,
+      "description": "",
+      "networks": [
+        "safaricom"
+      ],
+      "once_per_day": true,
+      "createdAt": "2026-06-25 10:25:20.441"
+    },
+    {
+      "id": "5fe5d204-ff21-40e3-8826-8b24f8dd28cb",
+      "name": "1GB Valid For 24Hrs",
+      "price": 99,
+      "description": "",
+      "networks": [
+        "safaricom"
+      ],
+      "once_per_day": true,
+      "createdAt": "2026-06-25 10:26:01.475"
+    },
+    {
+      "id": "9b82af2c-a70e-4ac7-804e-b16126a45782",
+      "name": "2.5GB Valid For 7Days",
+      "price": 300,
+      "description": "",
+      "networks": [
+        "safaricom"
+      ],
+      "once_per_day": true,
+      "createdAt": "2026-06-25 10:26:28.725"
+    },
+    {
+      "id": "17fb1621-1a65-4a49-8777-b01d54da7bf5",
+      "name": "6GB Valid For 7Days",
+      "price": 300,
+      "description": "",
+      "networks": [
+        "safaricom"
+      ],
+      "once_per_day": true,
+      "createdAt": "2026-06-25 10:27:02.349"
+    }
+  ],
+  "sms": [],
+  "mins": []
+}

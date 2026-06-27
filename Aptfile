@@ -1,0 +1,16 @@
+chromium
+chromium-sandbox
+fonts-liberation
+libnss3
+libatk1.0-0
+libatk-bridge2.0-0
+libcups2
+libdrm2
+libgbm1
+libgtk-3-0
+libxss1
+libxtst6
+libxcomposite1
+libxdamage1
+libxrandr2
+xdg-utils

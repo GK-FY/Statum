@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>FY Bot — WhatsApp Dashboard</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0a0e1a;
+      --bg2: #0f1628;
+      --card: rgba(255,255,255,0.04);
+      --card-border: rgba(255,255,255,0.08);
+      --accent: #6c63ff;
+      --accent2: #a78bfa;
+      --green: #10b981;
+      --red: #ef4444;
+      --amber: #f59e0b;
+      --text: #f1f5f9;
+      --text-muted: #64748b;
+      --text-sub: #94a3b8;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(108,99,255,0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(167,139,250,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(16,185,129,0.04) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Floating orbs */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+      animation: float 8s ease-in-out infinite;
+    }
+    .orb-1 { width: 400px; height: 400px; top: -100px; left: -100px; background: rgba(108,99,255,0.15); animation-delay: 0s; }
+    .orb-2 { width: 300px; height: 300px; bottom: -80px; right: -80px; background: rgba(167,139,250,0.1); animation-delay: 3s; }
+    .orb-3 { width: 200px; height: 200px; top: 50%; left: 60%; background: rgba(16,185,129,0.08); animation-delay: 5s; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50% { transform: translateY(-30px) scale(1.05); }
+    }
+
+    .card {
+      position: relative;
+      z-index: 1;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      padding: 40px 36px;
+      border-radius: 28px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.04),
+        0 24px 80px rgba(0,0,0,0.6),
+        0 0 80px rgba(108,99,255,0.08);
+      animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      opacity: 0;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(32px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .logo-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 18px;
+      margin-bottom: 20px;
+      font-size: 30px;
+      box-shadow: 0 8px 32px rgba(108,99,255,0.4);
+    }
+
+    h1 {
+      color: var(--text);
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 400;
+      margin-bottom: 28px;
+    }
+
+    .client-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(108,99,255,0.15);
+      border: 1px solid rgba(108,99,255,0.3);
+      color: var(--accent2);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .client-badge .dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent2);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    .qr-wrap {
+      position: relative;
+      width: 260px;
+      height: 260px;
+      margin: 0 auto 24px;
+    }
+
+    .qr-frame {
+      width: 100%;
+      height: 100%;
+      background: rgba(255,255,255,0.03);
+      border-radius: 20px;
+      border: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* QR corner decorations */
+    .qr-corner {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border-color: var(--accent);
+      border-style: solid;
+      border-width: 0;
+    }
+    .qr-corner.tl { top: 12px; left: 12px; border-top-width: 3px; border-left-width: 3px; border-radius: 4px 0 0 0; }
+    .qr-corner.tr { top: 12px; right: 12px; border-top-width: 3px; border-right-width: 3px; border-radius: 0 4px 0 0; }
+    .qr-corner.bl { bottom: 12px; left: 12px; border-bottom-width: 3px; border-left-width: 3px; border-radius: 0 0 0 4px; }
+    .qr-corner.br { bottom: 12px; right: 12px; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 4px 0; }
+
+    .qr-frame img {
+      width: 88%;
+      height: 88%;
+      object-fit: contain;
+      border-radius: 8px;
+    }
+
+    .qr-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .qr-placeholder .icon { font-size: 48px; opacity: 0.5; }
+    .qr-placeholder p { color: var(--text-muted); font-size: 13px; }
+
+    /* Spinner */
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid rgba(255,255,255,0.08);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Status pill */
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 50px;
+      font-size: 13px;
+      font-weight: 600;
+      margin: 0 auto 16px;
+    }
+    .status-pill .dot-status {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .status-pill.connected { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+    .status-pill.connected .dot-status { background: #10b981; box-shadow: 0 0 6px #10b981; animation: pulse 2s ease-in-out infinite; }
+    .status-pill.disconnected { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+    .status-pill.disconnected .dot-status { background: #ef4444; }
+    .status-pill.waiting { background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+    .status-pill.waiting .dot-status { background: #f59e0b; animation: pulse 1.5s ease-in-out infinite; }
+
+    .hint-text {
+      color: var(--text-muted);
+      font-size: 12.5px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    /* Pairing Code Box */
+    .pairing-box {
+      background: rgba(16,185,129,0.07);
+      border: 1px solid rgba(16,185,129,0.2);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      display: none;
+      text-align: center;
+    }
+    .pairing-box.show { display: block; }
+    .pairing-label { font-size: 12px; color: #34d399; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .pairing-code {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: 8px;
+      color: #ecfdf5;
+      font-family: 'Courier New', monospace;
+      background: rgba(255,255,255,0.05);
+      padding: 12px 20px;
+      border-radius: 10px;
+      display: inline-block;
+      margin-bottom: 14px;
+    }
+    .pairing-steps {
+      font-size: 12px;
+      color: #6ee7b7;
+      line-height: 1.8;
+      text-align: left;
+    }
+    .pairing-timer {
+      font-size: 12px;
+      color: #fca5a5;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+    .copy-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      padding: 7px 16px;
+      background: rgba(99,102,241,0.15);
+      border: 1px solid rgba(99,102,241,0.4);
+      border-radius: 8px;
+      color: #a5b4fc;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover { background: rgba(99,102,241,0.3); color: #fff; }
+    .copy-btn.copied { background: rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.5); color: #34d399; }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 8px 0 20px;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--card-border);
+    }
+
+    /* Buttons */
+    .btn-group { display: flex; flex-direction: column; gap: 10px; }
+    .btn-row { display: flex; gap: 10px; }
+
+    .btn {
+      flex: 1;
+      padding: 13px 18px;
+      border: none;
+      border-radius: 14px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0);
+      transition: background 0.2s;
+      border-radius: inherit;
+    }
+    .btn:hover::after { background: rgba(255,255,255,0.06); }
+    .btn:active { transform: scale(0.98); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6c63ff, #9c8cff);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(108,99,255,0.35);
+    }
+    .btn-primary:hover { box-shadow: 0 8px 28px rgba(108,99,255,0.5); transform: translateY(-1px); }
+
+    .btn-green {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(16,185,129,0.3);
+    }
+    .btn-green:hover { box-shadow: 0 8px 28px rgba(16,185,129,0.45); transform: translateY(-1px); }
+
+    .btn-outline {
+      background: rgba(255,255,255,0.05);
+      color: var(--text-sub);
+      border: 1px solid var(--card-border);
+    }
+    .btn-outline:hover { background: rgba(255,255,255,0.09); color: var(--text); border-color: rgba(255,255,255,0.15); }
+
+    .powered {
+      margin-top: 24px;
+      color: var(--text-muted);
+      font-size: 11px;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="card">
+    <div class="logo-wrap">🤖</div>
+    <h1 id="appTitle">FY Bot</h1>
+    <p class="subtitle">Multi-Client WhatsApp Automation</p>
+
+    <div id="clientIdDisplay" style="display:none; margin-bottom: 20px;">
+      <span class="client-badge">
+        <span class="dot"></span>
+        <span id="clientIdBadge"></span>
+      </span>
+    </div>
+
+    <div class="qr-wrap" id="qrWrap">
+      <div class="qr-frame" id="qrContainer">
+        <span class="qr-corner tl"></span>
+        <span class="qr-corner tr"></span>
+        <span class="qr-corner bl"></span>
+        <span class="qr-corner br"></span>
+        <div class="qr-placeholder">
+          <div class="icon">🔒</div>
+          <p>Connect your WhatsApp below</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="pairing-box" id="pairingBox">
+      <div class="pairing-label">🔑 WhatsApp Pairing Code</div>
+      <div class="pairing-code" id="pairingCodeText">— — — —</div>
+      <button class="copy-btn" id="copyPairingBtn" onclick="copyPairingCode()" style="display:none;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy Code
+      </button>
+      <div class="pairing-steps">
+        <strong style="color:#a7f3d0;">How to link:</strong><br>
+        1. Open WhatsApp on your phone<br>
+        2. Tap <strong>⋮ Menu → Linked Devices</strong><br>
+        3. Tap <strong>Link a Device</strong><br>
+        4. Choose <strong>"Link with phone number instead"</strong><br>
+        5. Enter your number, then type the code above
+      </div>
+      <div class="pairing-timer" id="pairingTimer"></div>
+    </div>
+
+    <div id="statusPill" class="status-pill waiting" style="display:none;">
+      <span class="dot-status"></span>
+      <span id="statusText">Initializing…</span>
+    </div>
+
+    <p class="hint-text" id="hint">Scan a QR code or link with your phone number to connect your WhatsApp bot</p>
+
+    <div class="btn-group">
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="generateQRClient()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="4" height="4" rx="0.5"/></svg>
+          Scan QR Code
+        </button>
+        <button class="btn btn-green" onclick="generatePairingClient()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          Link by Phone
+        </button>
+      </div>
+      <button class="btn btn-outline" onclick="openAdminPanel()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        Admin Dashboard
+      </button>
+    </div>
+
+    <p class="powered" id="siteFooter">Powered by whatsapp-web.js • FY Bot System</p>
+  </div>
+
+  <script>
+    let currentClientId = null;
+    let socket = null;
+    let pairingTimerInterval = null;
+
+    async function loadAppInfo() {
+      try {
+        const response = await fetch('/api/app-info');
+        const data = await response.json();
+        if (data.success && data.appName) {
+          document.getElementById('appTitle').textContent = data.appName;
+          document.title = `${data.appName} — WhatsApp Dashboard`;
+        }
+        if (data.footerText) {
+          const f = document.getElementById('siteFooter');
+          if (f) f.textContent = data.footerText;
+        }
+      } catch(e) {}
+    }
+
+    function copyPairingCode() {
+      const code = document.getElementById('pairingCodeText').textContent.trim();
+      if (!code || code.includes('—')) return;
+      const btn = document.getElementById('copyPairingBtn');
+      const done = () => {
+        if (btn) {
+          btn.classList.add('copied');
+          btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+          setTimeout(() => {
+            btn.classList.remove('copied');
+            btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Code';
+          }, 2000);
+        }
+      };
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(code).then(done).catch(() => {
+          const el = document.createElement('textarea');
+          el.value = code; document.body.appendChild(el); el.select();
+          document.execCommand('copy'); document.body.removeChild(el); done();
+        });
+      } else {
+        const el = document.createElement('textarea');
+        el.value = code; document.body.appendChild(el); el.select();
+        document.execCommand('copy'); document.body.removeChild(el); done();
+      }
+    }
+    loadAppInfo();
+
+    function setStatus(type, text) {
+      const pill = document.getElementById('statusPill');
+      const statusText = document.getElementById('statusText');
+      pill.style.display = 'inline-flex';
+      pill.className = 'status-pill ' + type;
+      statusText.textContent = text;
+    }
+
+    function initSocket(clientId) {
+      if (socket) socket.disconnect();
+      socket = io({ query: { clientId } });
+
+      const qrContainer = document.getElementById('qrContainer');
+      const hint = document.getElementById('hint');
+      const pairingBox = document.getElementById('pairingBox');
+
+      socket.on('qr', data => {
+        if (data && data.url) {
+          pairingBox.classList.remove('show');
+          document.getElementById('copyPairingBtn').style.display = 'none';
+          document.getElementById('qrWrap').style.display = 'block';
+          qrContainer.innerHTML = `
+            <span class="qr-corner tl"></span>
+            <span class="qr-corner tr"></span>
+            <span class="qr-corner bl"></span>
+            <span class="qr-corner br"></span>
+            <img src="${data.url}" alt="QR Code">
+          `;
+          setStatus('waiting', 'Scan the QR code with WhatsApp');
+          hint.textContent = 'Open WhatsApp → ⋮ Menu → Linked Devices → Link a Device';
+
+          Swal.fire({
+            icon: 'success',
+            title: 'QR Code Ready',
+            html: 'Scan this QR code with your WhatsApp to connect the bot.',
+            confirmButtonText: 'Got it',
+            confirmButtonColor: '#6c63ff',
+            background: '#0f1628',
+            color: '#f1f5f9'
+          });
+        }
+      });
+
+      socket.on('pairing_code', data => {
+        if (data && data.code) {
+          document.getElementById('qrWrap').style.display = 'none';
+          pairingBox.classList.add('show');
+          document.getElementById('pairingCodeText').textContent = data.code;
+          const cpBtn = document.getElementById('copyPairingBtn');
+          if (cpBtn) { cpBtn.style.display = 'inline-flex'; cpBtn.classList.remove('copied'); cpBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Code'; }
+          setStatus('waiting', 'Enter pairing code in WhatsApp');
+          hint.textContent = 'WhatsApp → Linked Devices → Link with phone number instead';
+
+          let secs = 60;
+          clearInterval(pairingTimerInterval);
+          const timerEl = document.getElementById('pairingTimer');
+          timerEl.textContent = `⏳ Code expires in ${secs}s`;
+          pairingTimerInterval = setInterval(() => {
+            secs--;
+            if (secs <= 0) {
+              clearInterval(pairingTimerInterval);
+              timerEl.textContent = '⚠️ Code may have expired. Try again if not connected.';
+            } else {
+              timerEl.textContent = `⏳ Code expires in ${secs}s`;
+            }
+          }, 1000);
+        }
+      });
+
+      socket.on('pairing_error', data => {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Pairing Code Failed',
+          html: `${data.error || 'Unknown error'}<br><br>A QR code will appear instead — scan that to connect.`,
+          confirmButtonColor: '#6c63ff',
+          background: '#0f1628',
+          color: '#f1f5f9'
+        });
+      });
+
+      socket.on('status', data => {
+        if (!data) return;
+        clearInterval(pairingTimerInterval);
+        document.getElementById('copyPairingBtn').style.display = 'none';
+
+        if (data.connected) {
+          document.getElementById('qrWrap').style.display = 'block';
+          pairingBox.classList.remove('show');
+          qrContainer.innerHTML = `
+            <span class="qr-corner tl"></span>
+            <span class="qr-corner tr"></span>
+            <span class="qr-corner bl"></span>
+            <span class="qr-corner br"></span>
+            <div class="qr-placeholder">
+              <div class="icon">✅</div>
+              <p>Bot is online</p>
+            </div>
+          `;
+          setStatus('connected', 'WhatsApp Connected & Active');
+          hint.textContent = 'Your bot is now online and ready to receive messages';
+
+          Swal.fire({
+            icon: 'success',
+            title: '🎉 Connected!',
+            text: 'Your WhatsApp bot is now online and ready.',
+            confirmButtonText: 'Awesome!',
+            confirmButtonColor: '#6c63ff',
+            background: '#0f1628',
+            color: '#f1f5f9'
+          });
+        } else {
+          document.getElementById('qrWrap').style.display = 'block';
+          qrContainer.innerHTML = `
+            <span class="qr-corner tl"></span>
+            <span class="qr-corner tr"></span>
+            <span class="qr-corner bl"></span>
+            <span class="qr-corner br"></span>
+            <div class="spinner"></div>
+          `;
+          setStatus('disconnected', 'Disconnected — waiting to reconnect…');
+          hint.textContent = 'Waiting for QR code to reconnect...';
+        }
+      });
+
+      socket.on('connect', () => console.log('Socket connected for client:', clientId));
+      socket.on('disconnect', () => setStatus('disconnected', 'Connection lost'));
+    }
+
+    async function askAccessCode() {
+      const { value: accessCode } = await Swal.fire({
+        title: 'Enter Access Code',
+        html: '<p style="color:#64748b;margin-bottom:12px;font-size:14px;">Enter your access code to continue</p>',
+        input: 'password',
+        inputPlaceholder: 'Access code',
+        inputAttributes: { autocapitalize: 'off', autocorrect: 'off', style: 'text-align:center;font-size:18px;letter-spacing:4px;font-family:monospace;' },
+        showCancelButton: true,
+        confirmButtonText: 'Verify',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#6c63ff',
+        cancelButtonColor: '#374151',
+        background: '#0f1628',
+        color: '#f1f5f9',
+        inputValidator: v => !v ? 'Please enter an access code' : null
+      });
+      return accessCode;
+    }
+
+    async function generateQRClient() {
+      const accessCode = await askAccessCode();
+      if (!accessCode) return;
+
+      try {
+        const response = await fetch('/api/verify-access-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accessCode })
+        });
+        const result = await response.json();
+
+        if (!result.success) {
+          Swal.fire({ icon: 'error', title: 'Access Denied', text: result.message || 'Invalid access code', confirmButtonColor: '#ef4444', background: '#0f1628', color: '#f1f5f9' });
+          return;
+        }
+
+        currentClientId = result.clientId;
+        document.getElementById('clientIdDisplay').style.display = 'block';
+        document.getElementById('clientIdBadge').textContent = 'Client: ' + currentClientId;
+
+        pairingBox.classList.remove('show');
+        document.getElementById('qrWrap').style.display = 'block';
+        qrContainer.innerHTML = `
+          <span class="qr-corner tl"></span>
+          <span class="qr-corner tr"></span>
+          <span class="qr-corner bl"></span>
+          <span class="qr-corner br"></span>
+          <div class="spinner"></div>
+        `;
+        setStatus('waiting', 'Generating QR code…');
+        document.getElementById('hint').textContent = 'Please wait while we set up your connection...';
+
+        initSocket(currentClientId);
+
+        Swal.fire({
+          icon: 'info',
+          title: 'Starting WhatsApp…',
+          html: `Launching browser to generate QR code.<br><small style="color:#64748b">This takes <strong>10–20 seconds</strong> on first run.</small>`,
+          timer: 3500,
+          timerProgressBar: true,
+          showConfirmButton: false,
+          background: '#0f1628',
+          color: '#f1f5f9'
+        });
+
+      } catch(error) {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to verify access code. Please try again.', confirmButtonColor: '#ef4444', background: '#0f1628', color: '#f1f5f9' });
+      }
+    }
+
+    async function generatePairingClient() {
+      const accessCode = await askAccessCode();
+      if (!accessCode) return;
+
+      const { value: phoneNumber } = await Swal.fire({
+        title: 'Enter Phone Number',
+        html: '<p style="color:#64748b;margin-bottom:12px;font-size:14px;">Enter the WhatsApp number to link<br><small>Format: 07XXXXXXXX or 2547XXXXXXXX</small></p>',
+        input: 'tel',
+        inputPlaceholder: 'e.g. 0712345678',
+        inputAttributes: { autocomplete: 'off', style: 'text-align:center;font-size:18px;letter-spacing:1px;' },
+        showCancelButton: true,
+        confirmButtonText: 'Get Pairing Code',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#10b981',
+        cancelButtonColor: '#374151',
+        background: '#0f1628',
+        color: '#f1f5f9',
+        inputValidator: v => !v ? 'Please enter a phone number' : null
+      });
+      if (!phoneNumber) return;
+
+      try {
+        document.getElementById('qrWrap').style.display = 'block';
+        document.getElementById('qrContainer').innerHTML = `
+          <span class="qr-corner tl"></span>
+          <span class="qr-corner tr"></span>
+          <span class="qr-corner bl"></span>
+          <span class="qr-corner br"></span>
+          <div class="spinner"></div>
+        `;
+        setStatus('waiting', 'Requesting pairing code…');
+        document.getElementById('hint').textContent = 'Please wait while we generate your pairing code...';
+
+        const response = await fetch('/api/request-pairing-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accessCode, phoneNumber })
+        });
+        const result = await response.json();
+
+        if (!result.success) {
+          Swal.fire({ icon: 'error', title: 'Failed', text: result.message || 'Could not start pairing', confirmButtonColor: '#ef4444', background: '#0f1628', color: '#f1f5f9' });
+          return;
+        }
+
+        currentClientId = result.clientId;
+        document.getElementById('clientIdDisplay').style.display = 'block';
+        document.getElementById('clientIdBadge').textContent = 'Client: ' + currentClientId;
+
+        initSocket(currentClientId);
+
+        Swal.fire({
+          icon: 'info',
+          title: 'Generating Code…',
+          html: `Getting your pairing code for <strong>+${result.phone}</strong><br>This may take 5–10 seconds.`,
+          timer: 3500,
+          timerProgressBar: true,
+          showConfirmButton: false,
+          background: '#0f1628',
+          color: '#f1f5f9'
+        });
+
+      } catch(error) {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to request pairing code. Please try again.', confirmButtonColor: '#ef4444', background: '#0f1628', color: '#f1f5f9' });
+      }
+    }
+
+    async function openAdminPanel() {
+      const { value: token } = await Swal.fire({
+        title: 'Admin Login',
+        html: '<p style="color:#64748b;margin-bottom:12px;font-size:14px;">Enter your admin token to access the dashboard</p>',
+        input: 'password',
+        inputPlaceholder: 'Enter admin token',
+        inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
+        showCancelButton: true,
+        confirmButtonText: 'Login',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#6c63ff',
+        cancelButtonColor: '#374151',
+        background: '#0f1628',
+        color: '#f1f5f9',
+        inputValidator: v => !v ? 'Please enter your admin token' : null
+      });
+
+      if (token && token.trim()) {
+        window.location.href = '/admin?token=' + encodeURIComponent(token.trim());
+      }
+    }
+
+    // Fix references after DOM load
+    const pairingBox = document.getElementById('pairingBox');
+    const qrContainer = document.getElementById('qrContainer');
+  </script>
+</body>
+</html>
